@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogIn, Key, User as UserIcon, AlertCircle, Sparkles, UserPlus, CheckCircle } from 'lucide-react';
+import { LogIn, Key, User as UserIcon, AlertCircle, UserPlus, CheckCircle } from 'lucide-react';
 import { User, Role } from '../types';
 import { Database, getLocalStorageData } from '../data';
 import { QudsiyyahCrest } from './InstitutionHeader';
@@ -156,26 +156,7 @@ export default function LoginView({ onLoginSuccess }: LoginViewProps) {
     }
   };
 
-  const handleQuickLogin = (user: { u: string; p: string }) => {
-    setUsername(user.u);
-    setPassword(user.p);
-    
-    // Auto submit
-    const users = getLocalStorageData<User>('pesantren_users', []);
-    const found = users.find(u => u.username === user.u);
-    if (found) {
-      onLoginSuccess(found);
-    }
-  };
 
-  const accounts = [
-    { label: 'Admin (M Ali Mahmudi Rozaq, S. Pd)', role: 'Admin', u: 'admin', p: 'admin123', bg: 'bg-emerald-50 text-emerald-800 border-emerald-300' },
-    { label: 'Pengasuh (Ustadz Luqman)', role: 'Pengasuh', u: 'pengasuh', p: 'pengasuh123', bg: 'bg-teal-50 text-teal-800 border-teal-300' },
-    { label: 'Musyrif (Ustadz Mansur)', role: 'Musyrif', u: 'musyrif', p: 'musyrif123', bg: 'bg-indigo-50 text-indigo-800 border-indigo-300' },
-    { label: 'Guru (Ustadzah Aminah)', role: 'Guru', u: 'guru', p: 'guru123', bg: 'bg-rose-50 text-rose-800 border-rose-300' },
-    { label: 'Sarpras (Pak Joko)', role: 'Sarpras', u: 'sarpras', p: 'sarpras123', bg: 'bg-amber-50 text-amber-800 border-amber-300' },
-    { label: 'Santri (Yusuf)', role: 'Santri', u: 'santri', p: 'santri123', bg: 'bg-sky-50 text-sky-800 border-sky-300' },
-  ];
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-radial from-slate-50 to-slate-200 p-4 md:p-8">
@@ -419,28 +400,7 @@ export default function LoginView({ onLoginSuccess }: LoginViewProps) {
               )
             )}
 
-            {/* Quick Demo Access Switcher - Only visible if we are not registering or successful */}
-            {activeTab === 'login' && (
-              <div className="mt-6 border-t border-slate-100 pt-5">
-                <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  Simulasi Login Cepat (Satu-Klik)
-                </h3>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {accounts.map((acc) => (
-                    <button
-                      key={acc.u}
-                      onClick={() => handleQuickLogin(acc)}
-                      className={`p-2 text-left border rounded-xl hover:shadow-sm hover:scale-[1.01] cursor-pointer transition-all text-[10px] font-semibold flex flex-col justify-between ${acc.bg}`}
-                      title={`Masuk sebagai ${acc.role}`}
-                    >
-                      <span className="font-bold truncate">{acc.label}</span>
-                      <span className="opacity-70 mt-0.5 font-mono text-[9px]">Sandi: {acc.p}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+
           </div>
         </div>
 
