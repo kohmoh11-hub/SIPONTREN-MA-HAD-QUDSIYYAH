@@ -1,0 +1,6 @@
+{
+  "name": "Sistem Terpadu Pondok Pesantren",
+  "description": "Sistem administrasi terintegrasi untuk Pondok Pesantren, mencakup Keizinan Santri, Pelaporan Sarpras, dan Jurnal Pembelajaran dengan sinkronisasi Google Sheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
