@@ -303,7 +303,7 @@ export default function InstitutionHeader({ variant = 'letterhead' }: Institutio
           <div className="text-center md:text-left flex-1 space-y-2">
             <div>
               <span className="px-3 py-1 bg-[#10b981]/25 text-emerald-300 text-[10px] font-bold tracking-wider rounded-full border border-emerald-500/20 uppercase">
-                Ma'had Aly & Salafiyyah
+                Pondok Pesantren Kitab Dan Tahfidz
               </span>
             </div>
             

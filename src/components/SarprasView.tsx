@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   AlertTriangle, Hammer, CheckCircle2, Clipboard, Image as ImageIcon, 
   Upload, Search, Trash2, X, Plus, Filter, Sparkles, AlertCircle
@@ -36,6 +36,53 @@ export default function SarprasView({
   const [isDragActive, setIsDragActive] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load all users from LocalStorage for autocompletion dropdown lookup
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  useEffect(() => {
+    const usersJson = localStorage.getItem('pesantren_users');
+    if (usersJson) {
+      try {
+        setAllUsers(JSON.parse(usersJson));
+      } catch (e) {}
+    }
+  }, [showFormModal]);
+
+  // Compute unique lists for dropdown selectors
+  const listPelapor = useMemo(() => {
+    const fromList = sarprasList.map(s => s.pelapor);
+    const fromUsers = allUsers.map(u => u.nama);
+    return Array.from(new Set([...fromList, ...fromUsers])).filter(Boolean);
+  }, [sarprasList, allUsers]);
+
+  const listKelas = useMemo(() => {
+    const fromList = sarprasList.map(s => s.kelas);
+    return Array.from(new Set([...fromList, 'XI-A', 'XII-A', 'X-A', 'XI-B', 'XII-B', 'Kamar Hunian', 'Kantor Staf'])).filter(Boolean);
+  }, [sarprasList]);
+
+  const listLokasi = useMemo(() => {
+    const fromList = sarprasList.map(s => s.lokasi);
+    return Array.from(new Set([...fromList, 'Kamar Al-Iman 02', 'Toilet Santri Lantai 1', 'Masjid Jami', 'Kelas XI-A', 'Halaman Utama', 'Kantin Pondok'])).filter(Boolean);
+  }, [sarprasList]);
+
+  const listDeskripsi = useMemo(() => {
+    const fromList = sarprasList.map(s => s.deskripsi);
+    return Array.from(new Set([...fromList, 'Kipas angin berbunyi bising dan tidak berputar kencang', 'Kran wudhu bocor terus menerus tidak bisa rapat', 'Lampu ruangan berkedip-kedip redup mau mati', 'Gagang pintu kelas patah tidak bisa dikunci'])).filter(Boolean);
+  }, [sarprasList]);
+
+  // Handler for smart prefill
+  const handlePelaporChange = (val: string) => {
+    setPelapor(val);
+    const existing = [...sarprasList].reverse().find(s => s.pelapor.toLowerCase() === val.toLowerCase());
+    if (existing) {
+      if (existing.kelas) setKelas(existing.kelas);
+    } else {
+      const matched = allUsers.find(u => u.nama.toLowerCase() === val.toLowerCase());
+      if (matched) {
+        setKelas(matched.role === Role.Santri ? 'XI-A' : 'Staf / Guru');
+      }
+    }
+  };
 
   // Stats calculation
   const sarprasStats = useMemo(() => {
@@ -379,10 +426,12 @@ export default function SarprasView({
                       type="text"
                       required
                       value={pelapor}
-                      onChange={(e) => setPelapor(e.target.value)}
+                      onChange={(e) => handlePelaporChange(e.target.value)}
                       placeholder="Masukkan nama pelapor..."
+                      list="list-pelapor"
                       className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-201 focus:outline-none focus:border-brand-secondary rounded-xl"
                     />
+                    <span className="text-[9px] text-slate-400 mt-0.5 block">Bisa pilih nama dari database</span>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Kelas Pelapor</label>
@@ -392,6 +441,7 @@ export default function SarprasView({
                       value={kelas}
                       onChange={(e) => setKelas(e.target.value)}
                       placeholder="XI-A / Staf"
+                      list="list-kelas"
                       className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-201 focus:outline-none focus:border-brand-secondary rounded-xl"
                     />
                   </div>
@@ -407,8 +457,10 @@ export default function SarprasView({
                     value={lokasi}
                     onChange={(e) => setLokasi(e.target.value)}
                     placeholder="Kamar Al-Iman 02 / Kelas XI-B / Toilet"
+                    list="list-lokasi"
                     className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-201 focus:outline-none focus:border-brand-secondary rounded-xl"
                   />
+                  <span className="text-[9px] text-slate-400 mt-0.5 block">Pilih lokasi yang pernah dilaporkan</span>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Kategori Kerusakan</label>
@@ -500,6 +552,25 @@ export default function SarprasView({
                   </div>
                 </div>
               </div>
+
+              {/* Datalists for autocomplete selection */}
+              <datalist id="list-pelapor">
+                {listPelapor.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
+
+              <datalist id="list-kelas">
+                {listKelas.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
+
+              <datalist id="list-lokasi">
+                {listLokasi.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
 
               <div className="border-t border-slate-100 pt-4 flex items-center justify-end gap-2.5">
                 <button

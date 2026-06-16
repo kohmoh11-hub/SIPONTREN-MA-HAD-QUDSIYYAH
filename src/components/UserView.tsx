@@ -91,7 +91,7 @@ export default function UserView({
           <button
             onClick={async () => {
               const defaultUsers = [
-                { nama: "K.H. Ahmad Dahlan", username: "admin", password: "admin123", role: Role.Admin, status: "Aktif" as const },
+                { nama: "M Ali Mahmudi Rozaq, S. Pd", username: "admin", password: "admin123", role: Role.Admin, status: "Aktif" as const },
                 { nama: "Ustadz H. M. Syafi'i (Admin 2)", username: "admin2", password: "admin123", role: Role.Admin, status: "Aktif" as const },
                 { nama: "Ustadz Luqman Hakim", username: "pengasuh", password: "pengasuh123", role: Role.Pengasuh, status: "Aktif" as const },
                 { nama: "Ustadz Mansur (Musyrif)", username: "musyrif", password: "musyrif123", role: Role.Musyrif, status: "Aktif" as const },

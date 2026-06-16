@@ -275,7 +275,7 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'tutorial' && (
+          {activeTab === 'tutorial' && currentUser.role === Role.Admin && (
             <TutorialView />
           )}
 

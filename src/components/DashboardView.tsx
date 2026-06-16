@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { User, Izin, Sarpras, Pembelajaran, Role } from '../types';
 import InstitutionHeader from './InstitutionHeader';
+import { formatDateTimeDisplay } from './IzinView';
 
 interface DashboardViewProps {
   currentUser: User;
@@ -337,11 +338,10 @@ export default function DashboardView({
                       <div className="text-[10px] text-slate-400">{item.kamar}</div>
                     </td>
                     <td className="py-3.5 px-4 font-medium text-slate-650 max-w-xs truncate">{item.tujuan}</td>
-                    <td className="py-3.5 px-4 font-mono text-slate-500">
-                      <div>{item.tanggal}</div>
-                      <div>Keluar: {item.keluar}</div>
+                    <td className="py-3.5 px-4 font-mono text-xs text-slate-700">
+                      <div>{formatDateTimeDisplay(item.keluar, item.tanggal)}</div>
                     </td>
-                    <td className="py-3.5 px-4 font-medium text-brand-accent">{item.kembali}</td>
+                    <td className="py-3.5 px-4 font-mono text-xs text-amber-800 font-semibold">{formatDateTimeDisplay(item.kembali, item.tanggal)}</td>
                     <td className="py-3.5 px-4">
                       <span className="px-2.5 py-1 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-lg uppercase">
                         Sedang Keluar

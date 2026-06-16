@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   FileText, Search, Filter, Plus, Calendar, Clock, Phone, MapPin, 
   Trash2, Edit, CheckCircle, XCircle, Printer, X, Sparkles, RefreshCcw
@@ -13,6 +13,38 @@ interface IzinViewProps {
   onUpdateIzin: (id: string, updates: Partial<Izin>) => Promise<any>;
   onDeleteIzin: (id: string) => Promise<any>;
 }
+
+const getTodayDateTimeString = (hours: number, minutes: number) => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const date = String(now.getDate()).padStart(2, '0');
+  const hh = String(hours).padStart(2, '0');
+  const mm = String(minutes).padStart(2, '0');
+  return `${year}-${month}-${date}T${hh}:${mm}`;
+};
+
+export const formatDateTimeDisplay = (val: string, fallbackDate?: string) => {
+  if (!val) return '-';
+  if (val.includes('T')) {
+    const [datePart, timePart] = val.split('T');
+    const [y, m, d] = datePart.split('-');
+    if (y && m && d) return `${d}/${m}/${y} ${timePart}`;
+    return `${datePart} ${timePart}`;
+  }
+  if (val.includes('-') && val.includes(':')) {
+    const parts = val.split(' ');
+    if (parts.length === 2) {
+      const [datePart, timePart] = parts;
+      const [y, m, d] = datePart.split('-');
+      if (y && m && d) return `${d}/${m}/${y} ${timePart}`;
+    }
+  }
+  if (val.length === 5 && val.includes(':')) {
+    return fallbackDate ? `${fallbackDate} ${val}` : `pukul ${val}`;
+  }
+  return val;
+};
 
 export default function IzinView({
   currentUser,
@@ -34,11 +66,82 @@ export default function IzinView({
   const [kamar, setKamar] = useState(currentUser.role === Role.Santri ? 'Kamar Al-Iman 02' : '');
   const [tujuan, setTujuan] = useState('');
   const [alasan, setAlasan] = useState('');
-  const [keluar, setKeluar] = useState('08:00');
-  const [kembali, setKembali] = useState('17:00');
+  const [keluar, setKeluar] = useState(getTodayDateTimeString(8, 0));
+  const [kembali, setKembali] = useState(getTodayDateTimeString(17, 0));
   const [noHpwali, setNoHpwali] = useState('0812');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load all users from LocalStorage for autocompletion dropdown lookup
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  useEffect(() => {
+    const usersJson = localStorage.getItem('pesantren_users');
+    if (usersJson) {
+      try {
+        setAllUsers(JSON.parse(usersJson));
+      } catch (e) {}
+    }
+  }, [showAddModal]);
+
+  // Compute unique lists for dropdown selectors
+  const listNama = useMemo(() => {
+    const fromList = izinList.map(iz => iz.nama);
+    const fromUsers = allUsers.filter(u => u.role?.toLowerCase() === 'santri').map(u => u.nama);
+    return Array.from(new Set([...fromList, ...fromUsers])).filter(Boolean);
+  }, [izinList, allUsers]);
+
+  const listNis = useMemo(() => {
+    const fromList = izinList.map(iz => iz.nis);
+    return Array.from(new Set(fromList)).filter(Boolean);
+  }, [izinList]);
+
+  const listKelas = useMemo(() => {
+    const fromList = izinList.map(iz => iz.kelas);
+    return Array.from(new Set([...fromList, 'XI-A', 'XII-A', 'X-A', 'XI-B', 'XII-B', 'X-B'])).filter(Boolean);
+  }, [izinList]);
+
+  const listKamar = useMemo(() => {
+    const fromList = izinList.map(iz => iz.kamar);
+    return Array.from(new Set([...fromList, 'Kamar Al-Iman 02', 'Kamar Al-Iman 01', 'Kamar Al-Iman 03', 'Kamar Al-Ihsan 01', 'Kamar Al-Ihsan 02'])).filter(Boolean);
+  }, [izinList]);
+
+  const listTujuan = useMemo(() => {
+    const fromList = izinList.map(iz => iz.tujuan);
+    return Array.from(new Set([...fromList, 'Pulang ke Rumah', 'Puskesmas / Rumah Sakit', 'Membeli Kitab di Toko Buku', 'Ziarah Abah/Simbah', 'ATM Menara Kudus'])).filter(Boolean);
+  }, [izinList]);
+
+  const listAlasan = useMemo(() => {
+    const fromList = izinList.map(iz => iz.alasan);
+    return Array.from(new Set([...fromList, 'Ada acara keluarga penting', 'Sakit kepala / berobat rawat jalan', 'Keperluan membeli perlengkapan belajar', 'Ziarah Makam Wali Songo', 'Menarik kiriman uang belanja dari orang tua'])).filter(Boolean);
+  }, [izinList]);
+
+  const listNoHpwali = useMemo(() => {
+    const fromList = izinList.map(iz => iz.noHpwali);
+    return Array.from(new Set(fromList)).filter(Boolean);
+  }, [izinList]);
+
+  // Handlers for smart autocompletion pre-fills
+  const handleNamaChange = (val: string) => {
+    setNama(val);
+    
+    // Look up in preceding records in reverse (most recent)
+    const existingRecord = [...izinList].reverse().find(iz => iz.nama.toLowerCase() === val.toLowerCase());
+    if (existingRecord) {
+      if (existingRecord.nis) setNis(existingRecord.nis);
+      if (existingRecord.kelas) setKelas(existingRecord.kelas);
+      if (existingRecord.kamar) setKamar(existingRecord.kamar);
+      if (existingRecord.noHpwali) setNoHpwali(existingRecord.noHpwali);
+    } else {
+      // Find matching user in database configuration
+      const matchedUser = allUsers.find(u => u.nama.toLowerCase() === val.toLowerCase());
+      if (matchedUser) {
+        // Find default assignments
+        setNis(matchedUser.username === 'santri' ? '12345/MQA' : 'NIP-QDS-260601');
+        setKelas('XI-A');
+        setKamar('Kamar Al-Iman 02');
+      }
+    }
+  };
 
   // Filter & Search
   const filteredIzin = useMemo(() => {
@@ -81,16 +184,16 @@ export default function IzinView({
       kamar,
       tujuan,
       alasan,
-      keluar,
-      kembali,
+      keluar: keluar.replace('T', ' '),
+      kembali: kembali.replace('T', ' '),
       noHpwali
     });
 
     // Reset non-fixed fields
     setTujuan('');
     setAlasan('');
-    setKeluar('08:00');
-    setKembali('17:00');
+    setKeluar(getTodayDateTimeString(8, 0));
+    setKembali(getTodayDateTimeString(17, 0));
     setNoHpwali('0812');
     
     setIsSubmitting(false);
@@ -212,13 +315,18 @@ export default function IzinView({
                       <div className="text-[11px] text-slate-500 mt-1 italic pl-4">"{iz.alasan}"</div>
                     </td>
                     <td className="py-4 px-4 font-mono text-slate-600">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        {iz.tanggal}
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        {iz.keluar} s.d {iz.kembali}
+                      <div className="flex flex-col gap-1 text-[11px] leading-tight">
+                        <div className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                          <span className="font-bold text-slate-700">Keluar:</span>
+                        </div>
+                        <div className="pl-2.5 text-slate-800 font-semibold">{formatDateTimeDisplay(iz.keluar, iz.tanggal)}</div>
+                        
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                          <span className="font-bold text-amber-800">Kembali:</span>
+                        </div>
+                        <div className="pl-2.5 text-amber-900 font-semibold">{formatDateTimeDisplay(iz.kembali, iz.tanggal)}</div>
                       </div>
                     </td>
                     <td className="py-4 px-4">
@@ -391,11 +499,11 @@ export default function IzinView({
                 </div>
                 <div>
                   <span className="text-slate-500 block">Jadwal Keberangkatan:</span>
-                  <span className="font-bold text-slate-950">{showPrintModal.tanggal} pukul {showPrintModal.keluar}</span>
+                  <span className="font-bold text-slate-950">{formatDateTimeDisplay(showPrintModal.keluar, showPrintModal.tanggal)}</span>
                 </div>
                 <div>
                   <span className="text-slate-500 block">Batas Waktu Kembali:</span>
-                  <span className="font-bold text-amber-700">{showPrintModal.kembali}</span>
+                  <span className="font-bold text-amber-700">{formatDateTimeDisplay(showPrintModal.kembali, showPrintModal.tanggal)}</span>
                 </div>
               </div>
 
@@ -467,7 +575,7 @@ export default function IzinView({
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {currentUser.role !== Role.Santri && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -476,10 +584,12 @@ export default function IzinView({
                       type="text"
                       required
                       value={nama}
-                      onChange={(e) => setNama(e.target.value)}
+                      onChange={(e) => handleNamaChange(e.target.value)}
                       placeholder="Masukkan nama santri..."
-                      className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-200 focus:outline-none focus:border-brand-secondary rounded-xl"
+                      list="list-nama"
+                      className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-200 focus:outline-none focus:border-brand-secondary rounded-xl transition-all"
                     />
+                    <span className="text-[10px] text-slate-400 mt-0.5 block font-medium">Bisa dipilih dari database atau ketik nama baru</span>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">NIS (Nomor Induk Santri)</label>
@@ -489,6 +599,7 @@ export default function IzinView({
                       value={nis}
                       onChange={(e) => setNis(e.target.value)}
                       placeholder="123456"
+                      list="list-nis"
                       className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-200 focus:outline-none focus:border-brand-secondary rounded-xl"
                     />
                   </div>
@@ -504,6 +615,7 @@ export default function IzinView({
                     value={kelas}
                     onChange={(e) => setKelas(e.target.value)}
                     placeholder="Contoh: XI-A atau XII-B"
+                    list="list-kelas"
                     className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-200 focus:outline-none focus:border-brand-secondary rounded-xl"
                     disabled={currentUser.role === Role.Santri}
                   />
@@ -516,6 +628,7 @@ export default function IzinView({
                     value={kamar}
                     onChange={(e) => setKamar(e.target.value)}
                     placeholder="Kamar Al-Iman 02"
+                    list="list-kamar"
                     className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-200 focus:outline-none focus:border-brand-secondary rounded-xl"
                     disabled={currentUser.role === Role.Santri}
                   />
@@ -534,6 +647,7 @@ export default function IzinView({
                     value={tujuan}
                     onChange={(e) => setTujuan(e.target.value)}
                     placeholder="Membeli kitab tafsir di toko buku kota / Berobat"
+                    list="list-tujuan"
                     className="w-full pl-9 text-xs font-semibold p-2.5 bg-slate-50 border border-slate-200 focus:outline-none focus:border-brand-secondary rounded-xl"
                   />
                 </div>
@@ -546,31 +660,30 @@ export default function IzinView({
                   value={alasan}
                   onChange={(e) => setAlasan(e.target.value)}
                   placeholder="Terangkan secara jelas alasan kepergian Anda agar disetujui ustadz..."
+                  list="list-alasan"
                   className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-200 focus:outline-none focus:border-brand-secondary rounded-xl h-20 resize-none"
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Jam Keluar</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Tanggal & Jam Keluar</label>
                   <input
-                    type="text"
+                    type="datetime-local"
                     required
                     value={keluar}
                     onChange={(e) => setKeluar(e.target.value)}
-                    placeholder="08:00"
-                    className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-200 focus:outline-none focus:border-brand-secondary rounded-xl font-mono text-center"
+                    className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-200 focus:outline-none focus:border-brand-secondary rounded-xl font-mono text-center cursor-pointer"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Estimasi Kembali</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Tanggal & Jam Kembali</label>
                   <input
-                    type="text"
+                    type="datetime-local"
                     required
                     value={kembali}
                     onChange={(e) => setKembali(e.target.value)}
-                    placeholder="17:00 / 18:00 (Besok)"
-                    className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-200 focus:outline-none focus:border-brand-secondary rounded-xl font-mono text-center"
+                    className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-200 focus:outline-none focus:border-brand-secondary rounded-xl font-mono text-center cursor-pointer"
                   />
                 </div>
                 <div>
@@ -581,10 +694,54 @@ export default function IzinView({
                     value={noHpwali}
                     onChange={(e) => setNoHpwali(e.target.value)}
                     placeholder="081234567890"
+                    list="list-noHpwali"
                     className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-200 focus:outline-none focus:border-brand-secondary rounded-xl font-mono text-center"
                   />
                 </div>
               </div>
+
+              {/* Datalists definitions for reactive user dropdown selection */}
+              <datalist id="list-nama">
+                {listNama.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
+
+              <datalist id="list-nis">
+                {listNis.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
+
+              <datalist id="list-kelas">
+                {listKelas.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
+
+              <datalist id="list-kamar">
+                {listKamar.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
+
+              <datalist id="list-tujuan">
+                {listTujuan.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
+
+              <datalist id="list-alasan">
+                {listAlasan.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
+
+              <datalist id="list-noHpwali">
+                {listNoHpwali.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
 
               <div className="border-t border-slate-100 pt-4 flex items-center justify-end gap-2.5">
                 <button

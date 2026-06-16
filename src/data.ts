@@ -2,7 +2,7 @@ import { Role, User, Izin, Sarpras, Pembelajaran, normalizeRole } from './types'
 
 // Seed Initial Data
 const INITIAL_USERS: User[] = [
-  { id: 'USR001', nama: 'K.H. Ahmad Dahlan', username: 'admin', password: 'admin123', role: Role.Admin, status: 'Aktif' },
+  { id: 'USR001', nama: 'M Ali Mahmudi Rozaq, S. Pd', username: 'admin', password: 'admin123', role: Role.Admin, status: 'Aktif' },
   { id: 'USR006', nama: 'Ustadz H. M. Syafi\'i (Admin 2)', username: 'admin2', password: 'admin123', role: Role.Admin, status: 'Aktif' },
   { id: 'USR002', nama: 'Ustadz Luqman Hakim', username: 'pengasuh', password: 'pengasuh123', role: Role.Pengasuh, status: 'Aktif' },
   { id: 'USR007', nama: 'Ustadz Mansur (Musyrif)', username: 'musyrif', password: 'musyrif123', role: Role.Musyrif, status: 'Aktif' },
@@ -216,12 +216,15 @@ export class Database {
     const api = this.getApiUrl();
     if (api) {
       try {
-        await fetch(`${api}?action=updateUser`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, status }),
-          mode: 'no-cors'
-        });
+        const updatedUser = updatedList.find(u => u.id === id);
+        if (updatedUser) {
+          await fetch(`${api}?action=updateUser`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedUser),
+            mode: 'no-cors'
+          });
+        }
       } catch (e) {
         console.error('Update status di API gagal:', e);
         return false;
@@ -294,7 +297,7 @@ export class Database {
         await fetch(`${api}?action=updateIzin`, {
           method: 'POST', // some GAS web apps only support POST/GET properly
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, ...updates }),
+          body: JSON.stringify(updated),
           mode: 'no-cors'
         });
       } catch (e) {
@@ -389,7 +392,7 @@ export class Database {
         await fetch(`${api}?action=updateSarpras`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, ...updates }),
+          body: JSON.stringify(updated),
           mode: 'no-cors'
         });
       } catch (e) {

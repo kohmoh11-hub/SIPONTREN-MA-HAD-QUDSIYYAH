@@ -25,6 +25,9 @@ export interface User {
   password?: string;
   role: Role;
   status: 'Aktif' | 'Nonaktif';
+  kelas?: string;
+  kamar?: string;
+  nis?: string;
 }
 
 export interface Izin {

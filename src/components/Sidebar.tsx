@@ -26,7 +26,7 @@ export default function Sidebar({ currentUser, activeTab, setActiveTab, onLogout
     { id: 'sarpras', label: 'Kerusakan Sarpras', icon: CheckCircle, roles: [Role.Admin, Role.Pengasuh, Role.Musyrif, Role.Guru, Role.PetugasSarpras] },
     { id: 'pembelajaran', label: 'Jurnal & Nilai Belajar', icon: BookOpen, roles: [Role.Admin, Role.Pengasuh, Role.Musyrif, Role.Guru, Role.PetugasSarpras, Role.Santri] },
     { id: 'users', label: 'Kelola Akun Sistem', icon: Users, roles: [Role.Admin] },
-    { id: 'tutorial', label: 'Integrasi Google Sheet', icon: HelpCircle, roles: [Role.Admin, Role.Pengasuh, Role.Musyrif, Role.Guru, Role.PetugasSarpras, Role.Santri] },
+    { id: 'tutorial', label: 'Integrasi Google Sheet', icon: HelpCircle, roles: [Role.Admin] },
   ];
 
   const filteredItems = menuItems.filter(item => 

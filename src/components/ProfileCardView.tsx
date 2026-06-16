@@ -92,9 +92,9 @@ export default function ProfileCardView({ currentUser }: ProfileCardViewProps) {
   const [profileData, setProfileData] = useState({
     nama: currentUser.nama,
     role: currentUser.role,
-    nomorInduk: isStudent ? '12345/MQA' : 'NIP-QDS-260601',
-    kelas: isStudent ? 'XI-A (Aliyah)' : 'Rumpun Keilmuan Mulok',
-    kamar: isStudent ? 'Kamar Al-Iman 02' : 'Ruang Guru Utama',
+    nomorInduk: isStudent ? (currentUser.nis || '12345/MQA') : 'NIP-QDS-260601',
+    kelas: isStudent ? (currentUser.kelas || 'XI-A (Aliyah)') : 'Rumpun Keilmuan Mulok',
+    kamar: isStudent ? (currentUser.kamar || 'Kamar Al-Iman 02') : 'Ruang Guru Utama',
     tempatLahir: 'Kudus',
     tanggalLahir: '2009-10-15',
     asalKota: 'Kudus, Jawa Tengah',
@@ -122,12 +122,24 @@ export default function ProfileCardView({ currentUser }: ProfileCardViewProps) {
         console.warn('Gagal memuat kustomisasi kartu', e);
       }
     } else {
+      // Synchronize directly with actual user object if no customized config exists
+      setProfileData({
+        nama: currentUser.nama,
+        role: currentUser.role,
+        nomorInduk: isStudent ? (currentUser.nis || '12345/MQA') : 'NIP-QDS-260601',
+        kelas: isStudent ? (currentUser.kelas || 'XI-A (Aliyah)') : 'Rumpun Keilmuan Mulok',
+        kamar: isStudent ? (currentUser.kamar || 'Kamar Al-Iman 02') : 'Ruang Guru Utama',
+        tempatLahir: 'Kudus',
+        tanggalLahir: '2009-10-15',
+        asalKota: 'Kudus, Jawa Tengah',
+        hp: '+62 812-3456-7890',
+      });
       // Auto-assign matching female avatar for female names if pre-seeded
       if (currentUser.nama.toLowerCase().includes('aminah') || currentUser.nama.toLowerCase().includes('solihah') || currentUser.nama.toLowerCase().includes('putri')) {
         setSelectedAvatarId('av-fatimah');
       }
     }
-  }, [currentUser]);
+  }, [currentUser, isStudent]);
 
   const activeTheme = CARD_THEMES.find(t => t.id === selectedThemeId) || CARD_THEMES[0];
   const activeAvatar = AVATAR_PRESETS.find(a => a.id === selectedAvatarId) || AVATAR_PRESETS[0];
@@ -441,7 +453,7 @@ export default function ProfileCardView({ currentUser }: ProfileCardViewProps) {
                     </div>
                   </div>
                   
-                  <span className="text-[7.5px] font-bold text-white block underline">K.H. Ahmad Dahlan</span>
+                  <span className="text-[7.5px] font-bold text-white block underline">M Ali Mahmudi Rozaq, S. Pd</span>
                 </div>
 
               </div>
@@ -837,7 +849,7 @@ export default function ProfileCardView({ currentUser }: ProfileCardViewProps) {
                     <svg className="w-12 h-3.5 text-amber-400" viewBox="0 0 100 30" stroke="currentColor" strokeWidth="2" fill="none">
                       <path d="M10,12 C25,2 40,25 50,15 C60,5 75,25 90,8" />
                     </svg>
-                  <span className="text-[7px] font-bold text-white block underline leading-none">K.H. Ahmad Dahlan</span>
+                  <span className="text-[7px] font-bold text-white block underline leading-none">M Ali Mahmudi Rozaq, S. Pd</span>
                 </div>
               </div>
 

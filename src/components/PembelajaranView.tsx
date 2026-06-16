@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   BookOpen, Calendar, Users, FileText, Plus, Search, Filter, 
   Image as ImageIcon, Upload, X, CheckCircle, HelpCircle, Sparkles 
@@ -34,6 +34,73 @@ export default function PembelajaranView({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const docInputRef = useRef<HTMLInputElement>(null);
+
+  // Load all users from LocalStorage for autocompletion dropdown lookup
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  useEffect(() => {
+    const usersJson = localStorage.getItem('pesantren_users');
+    if (usersJson) {
+      try {
+        setAllUsers(JSON.parse(usersJson));
+      } catch (e) {}
+    }
+  }, [showAddModal]);
+
+  // Compute unique lists for dropdown selectors
+  const listGuru = useMemo(() => {
+    const fromList = pembelajaranList.map(p => p.guru);
+    const fromUsers = allUsers.filter(u => u.role !== Role.Santri).map(u => u.nama);
+    return Array.from(new Set([...fromList, ...fromUsers])).filter(Boolean);
+  }, [pembelajaranList, allUsers]);
+
+  const listMapel = useMemo(() => {
+    const fromList = pembelajaranList.map(p => p.mapel);
+    const defaults = ['Tafsir Jalalain', 'Nahwu Alfiyah', 'Shorof Amtsilah Tashrifiyyah', 'Fathul Qorib (Fiqh)', 'Juz Amma / Tahfidz', 'Hadits Arbain Nawawi', 'Tarikh Islam / SKI', 'Aqidatul Awam'];
+    return Array.from(new Set([...fromList, ...defaults])).filter(Boolean);
+  }, [pembelajaranList]);
+
+  const listKelasPembelajaran = useMemo(() => {
+    const fromList = pembelajaranList.map(p => p.kelas);
+    const defaults = ['Kelas X-A', 'Kelas XI-A', 'Kelas XII-A', 'Halaqah Masjid Jami', 'Kamar Al-Iman', 'Selasar Perpustakaan'];
+    return Array.from(new Set([...fromList, ...defaults])).filter(Boolean);
+  }, [pembelajaranList]);
+
+  const listMateri = useMemo(() => {
+    const fromList = pembelajaranList.map(p => p.materi);
+    const defaults = ['Bab Syarat Sah Shalat', 'Bab Isim-Isim yang Di-rafa-kan', 'Setoran Hafalan Surat Al-Kahfi', 'Bab Jual Beli / Muamalah'];
+    return Array.from(new Set([...fromList, ...defaults])).filter(Boolean);
+  }, [pembelajaranList]);
+
+  const listMetode = useMemo(() => {
+    const fromList = pembelajaranList.map(p => p.metode);
+    const defaults = ['Sorogan / Talaqqi Mandiri', 'Bandongan / Wetonan', 'Ceramah & Diskusi', 'Simaan Hafalan Qur\'an', 'Tanya Jawab & Praktek'];
+    return Array.from(new Set([...fromList, ...defaults])).filter(Boolean);
+  }, [pembelajaranList]);
+
+  const listKehadiran = useMemo(() => {
+    const fromList = pembelajaranList.map(p => p.kehadiran);
+    const defaults = ['Hadir semua (30 siswa)', 'Hadir 29, 1 sakit', 'Hadir 28, 2 izin pulang', 'Hadir Semua'];
+    return Array.from(new Set([...fromList, ...defaults])).filter(Boolean);
+  }, [pembelajaranList]);
+
+  const handleGuruChange = (val: string) => {
+    setGuru(val);
+    const existing = [...pembelajaranList].reverse().find(p => p.guru.toLowerCase() === val.toLowerCase());
+    if (existing) {
+      if (existing.mapel) setMapel(existing.mapel);
+      if (existing.kelas) setKelas(existing.kelas);
+      if (existing.metode) setMetode(existing.metode);
+    }
+  };
+
+  const handleMapelChange = (val: string) => {
+    setMapel(val);
+    const existing = [...pembelajaranList].reverse().find(p => p.mapel.toLowerCase() === val.toLowerCase());
+    if (existing) {
+      if (existing.kelas) setKelas(existing.kelas);
+      if (existing.metode) setMetode(existing.metode);
+    }
+  };
 
   // Time-frame Statistics Calculations
   const metrics = useMemo(() => {
@@ -332,10 +399,12 @@ export default function PembelajaranView({
                     type="text"
                     required
                     value={guru}
-                    onChange={(e) => setGuru(e.target.value)}
+                    onChange={(e) => handleGuruChange(e.target.value)}
                     placeholder="Masukkan nama lengkap guru..."
+                    list="list-guru"
                     className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-201 focus:outline-none focus:border-brand-secondary rounded-xl"
                   />
+                  <span className="text-[9px] text-slate-400 mt-0.5 block">Pilih nama ustadz dari database</span>
                 </div>
               )}
 
@@ -346,8 +415,9 @@ export default function PembelajaranView({
                     type="text"
                     required
                     value={mapel}
-                    onChange={(e) => setMapel(e.target.value)}
+                    onChange={(e) => handleMapelChange(e.target.value)}
                     placeholder="Contoh: Tafsir Jalalain / Nahwu"
+                    list="list-mapel"
                     className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-201 focus:outline-none focus:border-brand-secondary rounded-xl"
                   />
                 </div>
@@ -359,6 +429,7 @@ export default function PembelajaranView({
                     value={kelas}
                     onChange={(e) => setKelas(e.target.value)}
                     placeholder="Contoh: XI-A, XII-B, Masjid Jami"
+                    list="list-kelas-belajar"
                     className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-201 focus:outline-none focus:border-brand-secondary rounded-xl"
                   />
                 </div>
@@ -372,6 +443,7 @@ export default function PembelajaranView({
                   value={materi}
                   onChange={(e) => setMateri(e.target.value)}
                   placeholder="Contoh: Bab Syarat & Rukun Wudhu yang Sah"
+                  list="list-materi"
                   className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-201 focus:outline-none focus:border-brand-secondary rounded-xl"
                 />
               </div>
@@ -385,6 +457,7 @@ export default function PembelajaranView({
                     value={metode}
                     onChange={(e) => setMetode(e.target.value)}
                     placeholder="Contoh: Sorogan / Ceramah kualitatif"
+                    list="list-metode"
                     className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-201 focus:outline-none focus:border-brand-secondary rounded-xl"
                   />
                 </div>
@@ -396,6 +469,7 @@ export default function PembelajaranView({
                     value={kehadiran}
                     onChange={(e) => setKehadiran(e.target.value)}
                     placeholder="Contoh: 30 Hadir, 2 Sakit demam"
+                    list="list-kehadiran"
                     className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-201 focus:outline-none focus:border-brand-secondary rounded-xl"
                   />
                 </div>
@@ -459,6 +533,43 @@ export default function PembelajaranView({
                   </div>
                 </div>
               </div>
+
+              {/* Interactive Datalists for automatic spreadsheet and historical record match */}
+              <datalist id="list-guru">
+                {listGuru.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
+
+              <datalist id="list-mapel">
+                {listMapel.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
+
+              <datalist id="list-kelas-belajar">
+                {listKelasPembelajaran.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
+
+              <datalist id="list-materi">
+                {listMateri.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
+
+              <datalist id="list-metode">
+                {listMetode.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
+
+              <datalist id="list-kehadiran">
+                {listKehadiran.map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
 
               <div className="border-t border-slate-100 pt-4 flex items-center justify-end gap-2.5">
                 <button
